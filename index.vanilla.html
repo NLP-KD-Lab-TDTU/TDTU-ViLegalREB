@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TDTU-ViLegalREB Leaderboard</title>
+  <style>
+    /* Theme tokens */
+    :root {
+      color-scheme: light dark;
+      --bg: #ffffff;
+      --fg: #1b1b1f;
+      --muted: #6a6a72;
+      --line: #e4e4e8;
+      --border: #cfcfd6;
+      --hover: #f6f6f8;
+      --accent: #1d4ed8;
+      --accent-fg: #ffffff;
+      --ok: #15803d;
+      --err: #b91c1c;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #131316;
+        --fg: #ececf0;
+        --muted: #9a9aa4;
+        --line: #26262c;
+        --border: #3a3a42;
+        --hover: #1b1b20;
+        --accent: #7aa7ff;
+        --accent-fg: #0b1020;
+        --ok: #4ade80;
+        --err: #f87171;
+      }
+    }
+
+    /* Base */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    main { max-width: 82rem; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+    header { margin-bottom: 2rem; }
+    section + section { margin-top: 3.5rem; }
+    h1 { margin: 0; font-size: 1.6rem; font-weight: 600; letter-spacing: -0.01em; }
+    h2 { margin: 0; font-size: 1.2rem; font-weight: 600; }
+    p { margin: 0; }
+    .muted, .note { color: var(--muted); }
+    .note { margin-bottom: 1rem; font-size: 0.875rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* Header & mode switch */
+    .board-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .mode-switch {
+      display: inline-flex;
+      background: var(--hover);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .mode-btn {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 0.35rem 0.75rem;
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .mode-btn:hover { color: var(--fg); }
+    .mode-btn.active {
+      background: var(--bg);
+      color: var(--fg);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    /* Leaderboard table */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    table { width: 100%; min-width: 60rem; border-collapse: collapse; }
+    th, td { padding: 0.65rem 0.75rem; text-align: left; }
+    th {
+      color: var(--muted);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      background: var(--hover);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      user-select: none;
+    }
+    td { border-bottom: 1px solid var(--line); font-size: 0.875rem; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: var(--hover); }
+    .rank { width: 2.5rem; text-align: center; color: var(--muted); font-weight: 500; }
+    .model { font-weight: 500; white-space: nowrap; }
+    .team { color: var(--muted); white-space: nowrap; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    th.primary { color: var(--fg); font-weight: 600; }  /* Ranking metric */
+    td.primary { font-weight: 600; }
+    .message { padding: 2.5rem 0.75rem; text-align: center; color: var(--muted); }
+
+    /* Submit form */
+    form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem 1.25rem;
+    }
+    .field { display: flex; flex-direction: column; gap: 0.375rem; }
+    label { font-size: 0.875rem; color: var(--muted); }
+    input {
+      width: 100%;
+      padding: 0.5rem 0.625rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+    }
+    input[type="file"] { padding: 0.375rem; }
+    input[type="file"]::file-selector-button {
+      margin-right: 0.75rem;
+      padding: 0.375rem 0.75rem;
+      border: 0;
+      border-radius: 4px;
+      background: var(--hover);
+      color: var(--fg);
+      font: inherit;
+      cursor: pointer;
+    }
+    .actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 1rem; }
+    button.submit {
+      padding: 0.55rem 1.35rem;
+      border: 0;
+      border-radius: 6px;
+      background: var(--accent);
+      color: var(--accent-fg);
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    button.submit:hover { filter: brightness(1.1); }
+    button.submit:disabled { opacity: 0.6; cursor: wait; }
+    button.link {
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--accent);
+      font: inherit;
+      cursor: pointer;
+    }
+    button.link:hover { text-decoration: underline; }
+
+    /* Modal dialog */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1.25rem;
+      opacity: 1;
+      transition: opacity 0.2s ease;
+    }
+    .modal-overlay[hidden] {
+      display: none !important;
+      opacity: 0;
+    }
+    .modal-card {
+      position: relative;
+      background: var(--bg);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      max-width: 26rem;
+      width: 100%;
+      padding: 2.25rem 2rem 1.75rem;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: modalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalPop {
+      0% { transform: scale(0.92); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .modal-close-icon {
+      position: absolute;
+      top: 0.875rem;
+      right: 0.875rem;
+      background: transparent;
+      border: 0;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0.375rem;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .modal-close-icon:hover {
+      background: var(--hover);
+      color: var(--fg);
+    }
+    .modal-icon-wrap {
+      width: 4.25rem;
+      height: 4.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+    .modal-icon-wrap.loading {
+      color: var(--accent);
+      background: rgba(29, 78, 216, 0.1);
+    }
+    .modal-icon-wrap.success {
+      color: var(--ok);
+      background: rgba(21, 128, 61, 0.12);
+    }
+    .modal-icon-wrap.error {
+      color: var(--err);
+      background: rgba(185, 28, 28, 0.12);
+    }
+    .modal-title {
+      margin: 0 0 0.5rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .modal-desc {
+      margin: 0 0 1.25rem;
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .modal-scores {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      width: 100%;
+      margin-bottom: 1.25rem;
+    }
+    .score-chip {
+      background: var(--hover);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.5rem 0.25rem;
+    }
+    .score-chip .chip-label {
+      font-size: 0.6875rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .score-chip .chip-val {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--fg);
+      margin-top: 0.125rem;
+    }
+    .modal-countdown {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+    }
+    .modal-btn {
+      padding: 0.55rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--hover);
+      color: var(--fg);
+      font: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .modal-btn:hover {
+      background: var(--line);
+    }
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 48rem) {
+      form { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>TDTU-ViLegalREB</h1>
+      <p class="muted">Vietnamese legal information retrieval benchmark</p>
+    </header>
+
+    <!-- Leaderboard -->
+    <section aria-labelledby="board-title">
+      <div class="board-header">
+        <h2 id="board-title">Leaderboard</h2>
+        <div class="mode-switch" role="group" aria-label="Relevance evaluation mode">
+          <button type="button" id="tab-core" class="mode-btn active" onclick="switchMode('core')">Core Relevance (Grade ≥ 2)</button>
+          <button type="button" id="tab-all" class="mode-btn" onclick="switchMode('all')">All Relevance (Grade ≥ 1)</button>
+        </div>
+      </div>
+      <p id="wake" class="note" hidden>Server is waking up. This can take up to a minute.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="rank">#</th>
+              <th>Model</th>
+              <th>Team</th>
+              <th class="num primary" title="Normalized Discounted Cumulative Gain @ 10 (Primary ranking metric)">nDCG@10</th>
+              <th class="num" title="Normalized Discounted Cumulative Gain @ 5">nDCG@5</th>
+              <th class="num" title="Mean Reciprocal Rank @ 10">MRR@10</th>
+              <th class="num" title="Recall @ 10">Recall@10</th>
+              <th class="num" title="Recall @ 100">Recall@100</th>
+              <th class="num" title="Mean Average Precision @ 10">MAP@10</th>
+              <th class="num" title="Mean Average Precision @ 100">MAP@100</th>
+              <th class="num" title="Recall @ 5">Recall@5</th>
+              <th class="num" title="Recall @ 50">Recall@50</th>
+              <th class="num" title="Hard Negative Rate @ 10 (Judged negative fraction)">HNR@10</th>
+            </tr>
+          </thead>
+          <tbody id="rows">
+            <tr><td class="message" colspan="13">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Submission form -->
+    <section aria-labelledby="submit-title">
+      <h2 id="submit-title">Submit results</h2>
+      <form id="form">
+        <div class="field">
+          <label for="model_name">Model name</label>
+          <input id="model_name" name="model_name" type="text" placeholder="e.g. BM25, MyLegalModel" required>
+        </div>
+        <div class="field">
+          <label for="team_name">Team / Author</label>
+          <input id="team_name" name="team_name" type="text" placeholder="e.g. NLP & KD Lab" required>
+        </div>
+        <div class="field">
+          <label for="paper_url">Paper or code link (optional)</label>
+          <input id="paper_url" name="paper_url" type="url" placeholder="https://">
+        </div>
+        <div class="field">
+          <label for="file">Submission file (.tsv)</label>
+          <input id="file" name="file" type="file" accept=".tsv,.txt" required>
+        </div>
+        <div class="actions">
+          <button id="submit" class="submit" type="submit">Submit</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <!-- Submission Status Modal (with Lucide React SVG Icons) -->
+  <div id="modal" class="modal-overlay" hidden style="display: none;">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button type="button" class="modal-close-icon" aria-label="Close" onclick="closeModal()">
+        <!-- Lucide React: X icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+
+      <div id="modal-icon-wrap" class="modal-icon-wrap loading">
+        <!-- Lucide icon dynamically inserted -->
+      </div>
+
+      <h3 id="modal-title" class="modal-title">Đang chấm điểm...</h3>
+      <p id="modal-desc" class="modal-desc">Hệ thống đang kiểm tra định dạng và tính toán metric.</p>
+
+      <div id="modal-scores" class="modal-scores" hidden>
+        <!-- Metric summary chips -->
+      </div>
+
+      <div id="modal-countdown" class="modal-countdown" hidden>
+        Tự động thoát sau <span id="countdown-num">5</span>s
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" id="modal-exit-btn" class="modal-btn" onclick="closeModal()">Thoát</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Backend base URL (auto-switches to localhost during local development or uses Render in production)
+    const urlParams = new URLSearchParams(window.location.search);
+    const API_BASE = urlParams.get("api") || (
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:")
+        ? "http://127.0.0.1:8000"
+        : "https://tdtu-vilegalreb-backend.onrender.com"
+    );
+
+    const $ = (id) => document.getElementById(id);
+    const fmt = (n) => (n === null || n === undefined || isNaN(n)) ? "—" : Number(n).toFixed(4);
+
+    // Lucide React SVG Icons
+    const LUCIDE_ICONS = {
+      // Loader2 icon with rotating animation
+      loader: `<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-loader-2 spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`,
+      // CheckCircle2 icon
+      check: `<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle-2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>`,
+      // XCircle icon
+      error: `<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`
+    };
+
+    let cachedRows = [];
+    let currentMode = "core"; // "core" or "all"
+    let countdownInterval = null;
+
+    function switchMode(mode) {
+      currentMode = mode;
+      $("tab-core").classList.toggle("active", mode === "core");
+      $("tab-all").classList.toggle("active", mode === "all");
+      renderRows(cachedRows);
+    }
+
+    // Create an element with plain text (prevents HTML injection)
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    // Allow only http(s) links
+    function safeUrl(value) {
+      try {
+        const url = new URL(value);
+        return /^https?:$/.test(url.protocol) ? url.href : null;
+      } catch {
+        return null;
+      }
+    }
+
+    // Show a single full-width message row, with an optional retry action
+    function showMessage(text, onRetry) {
+      const td = el("td", "message", text);
+      td.colSpan = 13;
+      if (onRetry) {
+        const btn = el("button", "link", "Retry");
+        btn.type = "button";
+        btn.addEventListener("click", onRetry);
+        td.append(" ", btn);
+      }
+      const tr = el("tr");
+      tr.append(td);
+      $("rows").replaceChildren(tr);
+    }
+
+    // Model name, strictly displaying what user entered, linked when a valid paper/code URL exists
+    function modelCell(item) {
+      const td = el("td", "model");
+      const url = safeUrl(item.paper_url);
+      if (!url) {
+        td.textContent = item.model_name;
+        return td;
+      }
+      const a = el("a", "", item.model_name);
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      td.append(a);
+      return td;
+    }
+
+    // Render rows displaying all metrics
+    function renderRows(rows) {
+      if (!rows || !rows.length) return showMessage("No submissions yet.");
+      const isCore = currentMode === "core";
+      $("rows").replaceChildren(...rows.map((item, i) => {
+        const tr = el("tr");
+        tr.append(
+          el("td", "rank", i + 1),
+          modelCell(item),
+          el("td", "team", item.team_name),
+          el("td", "num primary", fmt(item.ndcg_10)),
+          el("td", "num", fmt(item.ndcg_5)),
+          el("td", "num", fmt(isCore ? item.mrr_10 : item.mrr_10_all)),
+          el("td", "num", fmt(isCore ? item.recall_10 : item.recall_10_all)),
+          el("td", "num", fmt(isCore ? item.recall_100 : item.recall_100_all)),
+          el("td", "num", fmt(isCore ? item.map_10 : item.map_10_all)),
+          el("td", "num", fmt(isCore ? item.map_100 : item.map_100_all)),
+          el("td", "num", fmt(isCore ? item.recall_5 : item.recall_5_all)),
+          el("td", "num", fmt(isCore ? item.recall_50 : item.recall_50_all)),
+          el("td", "num", fmt(item.hnr_10))
+        );
+        return tr;
+      }));
+    }
+
+    // Fetch the leaderboard; warn if the free-tier server is still waking up
+    async function loadLeaderboard() {
+      const wake = $("wake");
+      const timer = setTimeout(() => (wake.hidden = false), 3000);
+      showMessage("Loading...");
+      try {
+        const res = await fetch(`${API_BASE}/api/leaderboard`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        cachedRows = await res.json();
+        renderRows(cachedRows);
+      } catch (err) {
+        console.error(err);
+        showMessage("Could not load the leaderboard.", loadLeaderboard);
+      } finally {
+        clearTimeout(timer);
+        wake.hidden = true;
+      }
+    }
+
+    // Modal helpers
+    function clearModalTimers() {
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+    }
+
+    function closeModal() {
+      clearModalTimers();
+      const modal = $("modal");
+      modal.setAttribute("hidden", "");
+      modal.style.display = "none";
+      $("submit").disabled = false;
+    }
+
+    function createChip(label, val) {
+      const chip = el("div", "score-chip");
+      chip.append(
+        el("div", "chip-label", label),
+        el("div", "chip-val", val)
+      );
+      return chip;
+    }
+
+    // Submit form with guaranteed 10s delay, modal with loading circle, and check icon on complete
+    $("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const form = e.currentTarget;
+      const btn = $("submit");
+
+      clearModalTimers();
+      btn.disabled = true;
+
+      // 1. Show modal in LOADING state
+      const modal = $("modal");
+      modal.removeAttribute("hidden");
+      modal.style.display = "flex";
+
+      $("modal-icon-wrap").className = "modal-icon-wrap loading";
+      $("modal-icon-wrap").innerHTML = LUCIDE_ICONS.loader;
+      $("modal-title").textContent = "Đang chấm điểm bài nộp...";
+      $("modal-desc").textContent = "Hệ thống đang xác thực định dạng TREC và tính toán các metric trên 143 queries (chờ 10 giây)...";
+      $("modal-scores").hidden = true;
+      $("modal-scores").replaceChildren();
+      $("modal-countdown").hidden = true;
+      $("modal-exit-btn").textContent = "Thoát";
+
+      // 2. Start fetch in background
+      let fetchResult = null;
+      let fetchError = null;
+
+      const submitTask = fetch(`${API_BASE}/api/submit`, {
+        method: "POST",
+        body: new FormData(form),
+      })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        fetchResult = { ok: res.ok, status: res.status, data };
+      })
+      .catch((err) => {
+        fetchError = err;
+      });
+
+      // 3. Guaranteed fixed 10s delay (runs strictly for 10 seconds, immune to premature closing)
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+
+      // Ensure submitTask finishes (in case upload took >10s)
+      await submitTask;
+
+      // 4. Handle result
+      if (fetchError || !fetchResult || !fetchResult.ok) {
+        // ERROR state: Switch icon to error (Lucide XCircle)
+        $("modal-icon-wrap").className = "modal-icon-wrap error";
+        $("modal-icon-wrap").innerHTML = LUCIDE_ICONS.error;
+        $("modal-title").textContent = "Nộp bài thất bại";
+
+        let errorMsg = "Đã xảy ra lỗi trong quá trình xử lý bài nộp.";
+        if (fetchError) {
+          errorMsg = `Lỗi kết nối: ${fetchError.message || "Không thể kết nối đến máy chủ backend."}`;
+        } else if (fetchResult && fetchResult.data) {
+          errorMsg = typeof fetchResult.data.detail === "string"
+            ? fetchResult.data.detail
+            : JSON.stringify(fetchResult.data);
+        }
+        $("modal-desc").textContent = errorMsg;
+        $("modal-scores").hidden = true;
+        $("modal-countdown").hidden = true;
+        $("modal-exit-btn").textContent = "Đóng";
+        return;
+      }
+
+      // 5. SUCCESS: Switch icon to check (Lucide CheckCircle2)
+      const result = fetchResult.data;
+      $("modal-icon-wrap").className = "modal-icon-wrap success";
+      $("modal-icon-wrap").innerHTML = LUCIDE_ICONS.check;
+      $("modal-title").textContent = "Nộp bài thành công!";
+      $("modal-desc").textContent = `Mô hình "${result.submission.model_name}" đã được chấm điểm và cập nhật lên Leaderboard.`;
+
+      // Render key metric chips
+      const s = result.scores || {};
+      $("modal-scores").replaceChildren(
+        createChip("nDCG@10", fmt(s.ndcg_10)),
+        createChip("Recall@100", fmt(s.recall_100)),
+        createChip("MAP@100", fmt(s.map_100))
+      );
+      $("modal-scores").hidden = false;
+
+      // Reset form and reload leaderboard table in background
+      form.reset();
+      loadLeaderboard();
+
+      // 6. Auto-exit after 5 seconds with live countdown + manual exit button
+      let countdown = 5;
+      $("countdown-num").textContent = countdown;
+      $("modal-countdown").hidden = false;
+      $("modal-exit-btn").textContent = "Thoát ngay";
+
+      countdownInterval = setInterval(() => {
+        countdown -= 1;
+        if (countdown > 0) {
+          $("countdown-num").textContent = countdown;
+        } else {
+          closeModal();
+        }
+      }, 1000);
+    });
+
+    loadLeaderboard();
+  </script>
+</body>
+</html>
