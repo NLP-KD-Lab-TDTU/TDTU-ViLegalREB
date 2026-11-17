@@ -65,13 +65,14 @@ export interface ValidateResponse {
 export interface SubmitResponse {
   status: string;
   message: string;
+  review_status?: 'pending' | 'approved' | 'rejected';
   is_update?: boolean;
   token_notice?: string;
   persistence_synced?: boolean;
-  scores: SubmissionScores;
-  submission: LeaderboardEntry;
+  scores?: SubmissionScores | null;
+  submission?: LeaderboardEntry | null;
   submission_id?: string;
-  download_url?: string;
+  download_url?: string | null;
   result_data?: any;
 }
 

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Check, Copy, Eye, EyeOff, Loader2, RefreshCw } from 'lucide-react';
+import { Check, Copy, Eye, EyeOff, Loader2, Lock, RefreshCw } from 'lucide-react';
 import {
   copyTextToClipboard,
   formatParamValue,
@@ -7,6 +7,10 @@ import {
   isValidExactParamInput,
   validateSecretTokenInput,
 } from '../api';
+
+// Temporary submission freeze flag; set to false to re-enable leaderboard submissions.
+const IS_SUBMISSION_LOCKED = true;
+const SUBMISSION_LOCK_MESSAGE = 'Submissions are temporarily locked.';
 
 interface SubmitFormProps {
   onSubmit: (formData: FormData) => Promise<boolean | void>;
@@ -64,7 +68,15 @@ export const SubmitForm: React.FC<SubmitFormProps> = ({ onSubmit, isSubmitting }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isSubmitting || isInvalidParam || !trimmedToken || Boolean(tokenError)) return;
+    if (
+      IS_SUBMISSION_LOCKED ||
+      isSubmitting ||
+      isInvalidParam ||
+      !trimmedToken ||
+      Boolean(tokenError)
+    ) {
+      return;
+    }
 
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -296,16 +308,46 @@ export const SubmitForm: React.FC<SubmitFormProps> = ({ onSubmit, isSubmitting }
             </button>
           </div>
 
-          <button id="submit" className="btn-primary form-submit-btn" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 size={16} className="spin" />
-                <span>Evaluating Submission...</span>
-              </>
-            ) : (
-              <span>Submit Run to Leaderboard</span>
-            )}
-          </button>
+          {IS_SUBMISSION_LOCKED ? (
+            <div
+              className="submit-btn-lock-wrap"
+              tabIndex={0}
+              title={SUBMISSION_LOCK_MESSAGE}
+              aria-label={`Submit Run to Leaderboard — ${SUBMISSION_LOCK_MESSAGE}`}
+              aria-describedby="submit-lock-tooltip"
+            >
+              <button
+                id="submit"
+                className="btn-primary form-submit-btn is-locked"
+                type="submit"
+                disabled
+                aria-disabled="true"
+              >
+                <Lock size={15} aria-hidden="true" />
+                <span>Submit Run to Leaderboard</span>
+              </button>
+              <div id="submit-lock-tooltip" role="tooltip" className="submit-lock-tooltip">
+                <Lock size={13} aria-hidden="true" />
+                <span>{SUBMISSION_LOCK_MESSAGE}</span>
+              </div>
+            </div>
+          ) : (
+            <button
+              id="submit"
+              className="btn-primary form-submit-btn"
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={16} className="spin" />
+                  <span>Evaluating Submission...</span>
+                </>
+              ) : (
+                <span>Submit Run to Leaderboard</span>
+              )}
+            </button>
+          )}
         </div>
       </form>
     </div>

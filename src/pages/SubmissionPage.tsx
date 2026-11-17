@@ -17,6 +17,9 @@ export const SubmissionPage: React.FC = () => {
   const [step2State, setStep2State] = useState<StepStatus>('idle');
   const [submittedModelName, setSubmittedModelName] = useState<string>('');
   const [submissionScores, setSubmissionScores] = useState<SubmissionScores | null>(null);
+  const [reviewStatus, setReviewStatus] = useState<'pending' | 'approved' | 'rejected' | undefined>(
+    undefined
+  );
   const [submittedToken, setSubmittedToken] = useState<string | null>(null);
   const [tokenNotice, setTokenNotice] = useState<string | null>(null);
   const [isUpdateSubmission, setIsUpdateSubmission] = useState<boolean>(false);
@@ -85,6 +88,8 @@ export const SubmissionPage: React.FC = () => {
 
     setSubmittedModelName(modelName);
     setSubmissionScores(null);
+    setReviewStatus(undefined);
+    setDownloadResultData(null);
     setSubmittedToken(updateToken || null);
     setTokenNotice(null);
     setIsUpdateSubmission(false);
@@ -171,11 +176,14 @@ export const SubmissionPage: React.FC = () => {
 
     setStep2State('completed');
     setSubmissionScores(resData.scores || null);
+    setReviewStatus(resData.review_status);
     setTokenNotice(resData.token_notice || null);
     setIsUpdateSubmission(Boolean(resData.is_update));
-    setDownloadResultData(resData.result_data || resData);
+    setDownloadResultData(resData.scores ? resData.result_data || resData : null);
 
-    refreshLeaderboard();
+    if (resData.review_status !== 'pending') {
+      refreshLeaderboard();
+    }
     return true;
   };
 
@@ -498,11 +506,12 @@ export const SubmissionPage: React.FC = () => {
         step2State={step2State}
         modelName={submittedModelName}
         scores={submissionScores}
+        reviewStatus={reviewStatus}
         submittedToken={submittedToken}
         tokenNotice={tokenNotice}
         isUpdate={isUpdateSubmission}
         errorMessage={modalErrorMessage}
-        onDownloadResult={handleDownloadResult}
+        onDownloadResult={downloadResultData ? handleDownloadResult : undefined}
         onClose={handleCloseModal}
       />
     </div>

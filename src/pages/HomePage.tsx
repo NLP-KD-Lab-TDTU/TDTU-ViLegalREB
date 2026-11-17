@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight, ChevronDown } from 'lucide-react';
 import { LeaderboardPreview } from '../components/LeaderboardPreview';
+import { QueryCategoryDistribution } from '../components/QueryCategoryDistribution';
 import { useLeaderboard } from '../context/LeaderboardContext';
 
 const INFO_CELL_COUNT = 6;
@@ -183,6 +184,9 @@ export const HomePage: React.FC = () => {
         error={error}
         onRetry={refreshLeaderboard}
       />
+
+      {/* Section 3: Query Category Distribution */}
+      <QueryCategoryDistribution entries={entries} isLoading={isLoading} />
     </div>
   );
 };

@@ -9,6 +9,7 @@ interface StatusModalProps {
   step2State: StepStatus;
   modelName?: string;
   scores?: SubmissionScores | null;
+  reviewStatus?: 'pending' | 'approved' | 'rejected';
   submittedToken?: string | null;
   tokenNotice?: string | null;
   isUpdate?: boolean;
@@ -36,6 +37,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
   step1State,
   step2State,
   modelName,
+  reviewStatus,
   submittedToken,
   tokenNotice,
   errorMessage,
@@ -43,6 +45,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
   onClose,
   isUpdate,
 }) => {
+  const isPendingReview = reviewStatus === 'pending';
   const [copied, setCopied] = useState<boolean>(false);
   const copyTimerRef = useRef<number | null>(null);
 
@@ -90,7 +93,11 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         {/* Title & description */}
         <h3 className="modal-title">
           {isSuccess
-            ? isUpdate
+            ? isPendingReview
+              ? isUpdate
+                ? 'Update Submitted for Review'
+                : 'Submitted for Review'
+              : isUpdate
               ? 'Submission Updated'
               : 'Evaluation Completed'
             : isError
@@ -99,7 +106,9 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         </h3>
         <p className="modal-desc">
           {isSuccess
-            ? `Model "${modelName}" has been successfully verified, evaluated, and ${isUpdate ? 'updated on' : 'ranked on'} the leaderboard.`
+            ? isPendingReview
+              ? `Model "${modelName}" has been verified, evaluated, and queued for administrator review. It will appear on the public leaderboard once approved.`
+              : `Model "${modelName}" has been successfully verified, evaluated, and ${isUpdate ? 'updated on' : 'ranked on'} the leaderboard.`
             : isError
             ? errorMessage || 'An error occurred during verification or evaluation.'
             : 'Validating format and computing benchmark retrieval metrics.'}
@@ -126,7 +135,10 @@ export const StatusModal: React.FC<StatusModalProps> = ({
               <div className="step-label">2. Compute IR Metrics</div>
               <div className="step-sub">
                 {step2State === 'running' && 'Calculating rankings against expert qrels...'}
-                {step2State === 'completed' && 'Evaluation complete. Leaderboard updated.'}
+                {step2State === 'completed' &&
+                  (isPendingReview
+                    ? 'Evaluation complete. Queued for administrator review.'
+                    : 'Evaluation complete. Leaderboard updated.')}
                 {step2State === 'error' && 'Scoring failed'}
                 {step2State === 'idle' && 'Waiting for scoring'}
               </div>
@@ -165,7 +177,9 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           <div className="modal-token-info">
             <span>
               {tokenNotice ||
-                (isUpdate
+                (isPendingReview
+                  ? 'Secret Token encrypted and saved. Keep using this secret for updates or new models under your team while your submission is reviewed.'
+                  : isUpdate
                   ? 'Secret Token verified. Leaderboard entry overwritten cleanly.'
                   : 'Secret Token encrypted and saved. Keep using this secret for updates or new models under your team.')}
             </span>
