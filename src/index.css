@@ -3392,13 +3392,6 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   gap: 16px;
 }
 
-.distribution-card {
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 18px 20px;
-}
-
 .distribution-chart-scroll {
   width: 100%;
   overflow-x: auto;
