@@ -334,6 +334,48 @@ export const QueryCategoryDistribution: React.FC<QueryCategoryDistributionProps>
               </g>
             </svg>
           </div>
+          <ol className="distribution-mobile-list" aria-label="Category query distribution">
+            {rows.map((row) => {
+              const barPct = Math.min(100, (row.queries / xMax) * 100);
+              return (
+                <li key={row.key} className="distribution-mobile-item">
+                  <div className="distribution-mobile-head">
+                    <span className="distribution-mobile-cat">
+                      <span className="distribution-mobile-rank">
+                        {String(row.rank).padStart(2, '0')}
+                      </span>
+                      <span>{row.key}</span>
+                    </span>
+                    <span className="distribution-mobile-count">
+                      <strong>{row.queries}</strong> ({row.sharePct.toFixed(1)}%)
+                    </span>
+                  </div>
+                  <div className="distribution-mobile-bar-track" aria-hidden="true">
+                    <div
+                      className="distribution-mobile-bar-fill"
+                      style={{ width: `${barPct}%` }}
+                    />
+                  </div>
+                  <div className="distribution-mobile-model-row">
+                    {row.topModel ? (
+                      <>
+                        <span className="distribution-mobile-model-name">
+                          Top: {row.topModel.modelName}
+                        </span>
+                        <span className="distribution-mobile-model-score">
+                          {row.topModel.score.toFixed(4)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="distribution-mobile-model-empty">
+                        Top: {isLoading ? 'Loading…' : '—'}
+                      </span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
         </div>
       </div>
     </section>

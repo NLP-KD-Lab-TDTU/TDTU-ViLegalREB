@@ -12,7 +12,6 @@ interface BenchmarkInfoCell {
   label: string;
   value: React.ReactNode;
   posClass: string;
-  channelCode: string;
 }
 
 export const HomePage: React.FC = () => {
@@ -73,42 +72,36 @@ export const HomePage: React.FC = () => {
       label: 'Query',
       value: '143',
       posClass: 'info-pos-r2c6',
-      channelCode: '01',
     },
     {
       id: 'models',
       label: 'Models',
       value: isLoading ? '—' : entries.length,
       posClass: 'info-pos-r3c5',
-      channelCode: '02',
     },
     {
       id: 'corpus',
       label: 'Corpus',
       value: '3.03M Chunks',
       posClass: 'info-pos-r3c6',
-      channelCode: '03',
     },
     {
       id: 'primary-metric',
       label: 'Primary Metric',
       value: 'nDCG@10',
       posClass: 'info-pos-r4c4',
-      channelCode: '04',
     },
     {
       id: 'relevance-scale',
       label: 'Relevance Scale',
       value: 'Graded (0 1 2)',
       posClass: 'info-pos-r4c5',
-      channelCode: '05',
     },
     {
       id: 'tracks',
       label: 'Tracks',
       value: 'Full & Candidate',
       posClass: 'info-pos-r4c6',
-      channelCode: '06',
     },
   ];
 

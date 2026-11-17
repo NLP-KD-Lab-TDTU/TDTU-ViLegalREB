@@ -1,11 +1,6 @@
 import React, { useMemo } from 'react';
 import type { CategoryScoreMap } from '../types';
-import {
-  BENCHMARK_CATEGORIES,
-  type BenchmarkCategoryDef,
-} from '../data/benchmarkCategories';
-
-export { BENCHMARK_CATEGORIES, type BenchmarkCategoryDef };
+import { BENCHMARK_CATEGORIES } from '../data/benchmarkCategories';
 
 interface CategoryBarChartProps {
   categoryScores?: CategoryScoreMap | null;
@@ -15,10 +10,8 @@ interface CategoryBarChartProps {
 interface BarItem {
   id: string;
   label: string;
-  shortLabel: string;
   coreScore: number;
   allScore: number;
-  queries: number;
 }
 
 export const CategoryBarChart: React.FC<CategoryBarChartProps> = ({
@@ -46,10 +39,8 @@ export const CategoryBarChart: React.FC<CategoryBarChartProps> = ({
       return {
         id: cat.key,
         label: cat.key,
-        shortLabel: cat.short,
         coreScore: core,
         allScore: all,
-        queries: cat.queries,
       };
     });
   }, [categoryScores]);

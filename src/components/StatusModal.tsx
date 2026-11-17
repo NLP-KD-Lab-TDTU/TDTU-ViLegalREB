@@ -1,14 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, CheckCircle2, Circle, Copy, Loader2, X, XCircle } from 'lucide-react';
 import { copyTextToClipboard } from '../api';
-import { SubmissionScores, StepStatus } from '../types';
+import { StepStatus } from '../types';
 
 interface StatusModalProps {
   isOpen: boolean;
   step1State: StepStatus;
   step2State: StepStatus;
   modelName?: string;
-  scores?: SubmissionScores | null;
   reviewStatus?: 'pending' | 'approved' | 'rejected';
   submittedToken?: string | null;
   tokenNotice?: string | null;

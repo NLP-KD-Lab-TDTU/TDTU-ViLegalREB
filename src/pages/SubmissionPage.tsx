@@ -4,7 +4,7 @@ import { SubmitForm } from '../components/SubmitForm';
 import { StatusModal } from '../components/StatusModal';
 import { MathFormula } from '../components/MathFormula';
 import { useLeaderboard } from '../context/LeaderboardContext';
-import { validateSubmissionApi, computeResultApi, formatParamValue } from '../api';
+import { validateSubmissionApi, computeResultApi, formatParamValue, downloadFile } from '../api';
 import { StepStatus, SubmissionScores, ValidateResponse, SubmitResponse } from '../types';
 
 export const SubmissionPage: React.FC = () => {
@@ -40,19 +40,8 @@ export const SubmissionPage: React.FC = () => {
       model_name: submittedModelName,
       scores: submissionScores,
     };
-
-    const blob = new Blob([JSON.stringify(dataToSave, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
     const safeName = submittedModelName.replace(/[^a-zA-Z0-9_\-\.]/g, '_') || 'submission';
-    link.href = url;
-    link.download = `${safeName}_metrics.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadFile(JSON.stringify(dataToSave, null, 2), `${safeName}_metrics.json`);
   };
 
   const handleDownloadSampleTsv = () => {
@@ -62,16 +51,7 @@ export const SubmissionPage: React.FC = () => {
       "q1\tQ0\tdoc_108\t3\t10.12\tMyModel\n" +
       "q2\tQ0\tdoc_005\t1\t16.20\tMyModel\n" +
       "q2\tQ0\tdoc_088\t2\t14.05\tMyModel\n";
-
-    const blob = new Blob([sampleContent], { type: 'text/tab-separated-values;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'sample_trec_run.tsv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadFile(sampleContent, 'sample_trec_run.tsv', 'text/tab-separated-values;charset=utf-8;');
   };
 
   const handleSubmit = async (formData: FormData): Promise<boolean> => {
@@ -420,10 +400,16 @@ export const SubmissionPage: React.FC = () => {
               Primary ranking metric. Evaluates ranked lists with logarithmic discounting, giving highest weight to Grade 2 provisions:
             </p>
             <div className="doc-formula-box">
-              <MathFormula
-                block
-                math="\text{DCG}@K = \sum_{i=1}^{K} \frac{2^{r(i)} - 1}{\log_2(i + 1)}, \qquad \text{nDCG}@K = \frac{\text{DCG}@K}{\text{IDCG}@K}"
-              />
+              <div className="doc-formula-pair">
+                <MathFormula
+                  block
+                  math="\text{DCG}@K = \sum_{i=1}^{K} \frac{2^{r(i)} - 1}{\log_2(i + 1)},"
+                />
+                <MathFormula
+                  block
+                  math="\text{nDCG}@K = \frac{\text{DCG}@K}{\text{IDCG}@K}"
+                />
+              </div>
             </div>
             <p className="doc-formula-caption">
               Where <MathFormula math="r(i) \in \{0, 1, 2\}" /> is the grade at rank <MathFormula math="i" />, and <MathFormula math="\text{IDCG}@K" /> is the Ideal DCG from optimal sorting.
@@ -454,10 +440,16 @@ export const SubmissionPage: React.FC = () => {
               Precision across ranks and rank of the first relevant document:
             </p>
             <div className="doc-formula-box">
-              <MathFormula
-                block
-                math="\text{AP}@K = \frac{1}{\min(K, |\mathcal{R}_q|)} \sum_{i=1}^{K} P(i) \cdot \mathbb{I}[d_i \in \mathcal{R}_q], \qquad \text{MAP}@K = \frac{1}{|\mathcal{Q}|} \sum_{q \in \mathcal{Q}} \text{AP}_q@K"
-              />
+              <div className="doc-formula-pair">
+                <MathFormula
+                  block
+                  math="\text{AP}@K = \frac{1}{\min(K, |\mathcal{R}_q|)} \sum_{i=1}^{K} P(i) \cdot \mathbb{I}[d_i \in \mathcal{R}_q],"
+                />
+                <MathFormula
+                  block
+                  math="\text{MAP}@K = \frac{1}{|\mathcal{Q}|} \sum_{q \in \mathcal{Q}} \text{AP}_q@K"
+                />
+              </div>
               <MathFormula
                 block
                 math="\text{MRR}@10 = \frac{1}{|\mathcal{Q}|} \sum_{q \in \mathcal{Q}} \frac{1}{\text{rank}_q}"
@@ -505,7 +497,6 @@ export const SubmissionPage: React.FC = () => {
         step1State={step1State}
         step2State={step2State}
         modelName={submittedModelName}
-        scores={submissionScores}
         reviewStatus={reviewStatus}
         submittedToken={submittedToken}
         tokenNotice={tokenNotice}

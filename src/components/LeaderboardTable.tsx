@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Download, Search, X, ArrowDown, ArrowUp, ArrowUpDown, ExternalLink, Layers2 } from 'lucide-react';
 import { LeaderboardEntry, RelevanceMode, TrackFilter, SortField, SortDirection } from '../types';
-import { fmt, safeUrl, formatDate } from '../api';
+import { fmt, safeUrl, formatDate, downloadFile } from '../api';
 import { CategoryBarChart } from './CategoryBarChart';
 import { DockerIcon, DockerCellStatus, hasDockerSubmission } from './DockerIcon';
 import { LeaderboardFootnotes } from './LeaderboardFootnotes';
@@ -171,9 +171,8 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
     if (sortField === field) {
       setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else if (field === 'rank' && sortField === 'ndcg_10') {
-      // If currently sorted by primary metric (ndcg_10 desc, ranks 1->N), clicking rank flips to desc (N->1)
+      // Ranks are already 1->N under default nDCG@10 desc, so flip direction directly.
       setSortField('rank');
-      setSortDirection(sortDirection === 'desc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
       const ascFields: SortField[] = ['rank', 'model_name', 'team_name', 'eval_mode'];
@@ -225,16 +224,8 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
       },
     };
 
-    const blob = new Blob([JSON.stringify(dataToSave, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
     const safeName = entry.model_name.replace(/[^a-zA-Z0-9_\-\.]/g, '_') || 'model';
-    link.href = url;
-    link.download = `${safeName}_metrics.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadFile(JSON.stringify(dataToSave, null, 2), `${safeName}_metrics.json`);
   };
 
   const renderSortIndicator = (field: SortField) => {
@@ -385,7 +376,6 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
             <col className="col-num" />
             <col className="col-num" />
             <col className="col-num" />
-            {/* Diag. column hidden: <col className="col-num" /> */}
           </colgroup>
           <thead>
             {/* Top row: Metric Group Super-Headers */}
@@ -428,7 +418,6 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
               <th colSpan={4} className="th-group">Recall</th>
               <th colSpan={2} className="th-group">MAP</th>
               <th colSpan={1} className="th-group">MRR</th>
-              {/* <th colSpan={1} className="th-group">Diag.</th> */}
             </tr>
 
             {/* Sub row: Specific Metric Cutoffs */}
@@ -496,13 +485,6 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
               >
                 MRR@10 {renderSortIndicator('mrr_10')}
               </th>
-              {/* <th
-                className="th-num sortable"
-                onClick={() => handleSort('hnr_10')}
-                title="Hard Negative Rate @ 10 (Judged negative ratio)"
-              >
-                HNR@10 {renderSortIndicator('hnr_10')}
-              </th> */}
             </tr>
           </thead>
 
@@ -631,9 +613,6 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                       <td className={`td-num ${isBest(isCore ? item.mrr_10 : item.mrr_10_all, bestScores.mrr_10) ? 'cell-best-metric' : ''}`}>
                         {fmt(isCore ? item.mrr_10 : item.mrr_10_all)}
                       </td>
-
-                      {/* Diagnostic: strictly excluded from highlight ("trừ HNR@10") */}
-                      {/* <td className="td-num">{fmt(item.hnr_10)}</td> */}
                     </tr>
 
                     {/* Expandable Model Details Panel */}
@@ -676,12 +655,10 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                                     </span>
                                   </div>
                                   {item.submitted_at && (
-                                    <>
-                                      <div className="details-meta-item">
-                                        <span className="details-meta-label">Last Submission:</span>
-                                        <span className="details-meta-value">{formatDate(item.submitted_at)}</span>
-                                      </div>
-                                    </>
+                                    <div className="details-meta-item">
+                                      <span className="details-meta-label">Last Submission:</span>
+                                      <span className="details-meta-value">{formatDate(item.submitted_at)}</span>
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -711,95 +688,7 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                               </div>
                             </div>
 
-                            {/* Split Container: Left = Metric Comparison Table, Right = Category Radar Chart */}
                             <div className="details-split-container">
-                              {/* Left Side: Metric Comparison Table */}
-                              {/* <div className="details-table-panel">
-                                <div className="details-metrics-grid">
-                                  <table className="details-comparison-table">
-                                    <thead>
-                                      <tr>
-                                        <th className="metric-th">Evaluation Metric</th>
-                                        <th className="num-th">
-                                          <span className="th-title">Core</span>
-                                        </th>
-                                        <th className="num-th">
-                                          <span className="th-title">All</span>
-                                        </th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-    
-                                      <tr className="metric-primary-row">
-                                        <td>
-                                          <div className="metric-name-wrap">
-                                            <strong>nDCG@10</strong>
-                                          </div>
-                                        </td>
-                                        <td className="num-td highlight-num">{fmt(item.ndcg_10)}</td>
-                                        <td className="num-td highlight-num">{fmt(item.ndcg_10)}</td>
-                                      </tr>
-                                      <tr>
-                                        <td><strong>nDCG@5</strong></td>
-                                        <td className="num-td">{fmt(item.ndcg_5)}</td>
-                                        <td className="num-td">{fmt(item.ndcg_5)}</td>
-                                      </tr>
-                                      <tr>
-                                        <td><strong>MRR@10</strong></td>
-                                        <td className="num-td">{fmt(item.mrr_10)}</td>
-                                        <td className="num-td">{fmt(item.mrr_10_all)}</td>
-                                      </tr>
-
-                                      <tr>
-                                        <td><strong>Recall@5</strong></td>
-                                        <td className="num-td">{fmt(item.recall_5)}</td>
-                                        <td className="num-td">{fmt(item.recall_5_all)}</td>
-                                      </tr>
-                                      <tr>
-                                        <td><strong>Recall@10</strong></td>
-                                        <td className="num-td">{fmt(item.recall_10)}</td>
-                                        <td className="num-td">{fmt(item.recall_10_all)}</td>
-                                      </tr>
-                                      <tr>
-                                        <td><strong>Recall@50</strong></td>
-                                        <td className="num-td">{fmt(item.recall_50)}</td>
-                                        <td className="num-td">{fmt(item.recall_50_all)}</td>
-                                      </tr>
-                                      <tr>
-                                        <td><strong>Recall@100</strong></td>
-                                        <td className="num-td">{fmt(item.recall_100)}</td>
-                                        <td className="num-td">{fmt(item.recall_100_all)}</td>
-                                      </tr>
-
-                                      <tr>
-                                        <td><strong>MAP@10</strong></td>
-                                        <td className="num-td">{fmt(item.map_10)}</td>
-                                        <td className="num-td">{fmt(item.map_10_all)}</td>
-                                      </tr>
-                                      <tr>
-                                        <td><strong>MAP@100</strong></td>
-                                        <td className="num-td">{fmt(item.map_100)}</td>
-                                        <td className="num-td">{fmt(item.map_100_all)}</td>
-                                      </tr>
-
-                                      <tr>
-                                        <td><strong>HNR@10</strong></td>
-                                        <td className="num-td">{fmt(item.hnr_10)}</td>
-                                        <td className="num-td" style={{ color: 'var(--text-muted)' }}>—</td>
-                                      </tr>
-                                      {item.judged_fraction_10 !== undefined && item.judged_fraction_10 !== null && (
-                                        <tr>
-                                          <td><strong>Judged Fraction @ 10</strong></td>
-                                          <td className="num-td">{fmt(item.judged_fraction_10)}</td>
-                                          <td className="num-td">{fmt(item.judged_fraction_10)}</td>
-                                        </tr>
-                                      )}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div> */}
-
-                              {/* Category Performance Bar Chart (Core vs All) */}
                               <div className="details-chart-panel">
                                 <CategoryBarChart
                                   categoryScores={item.category_scores}

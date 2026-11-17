@@ -96,7 +96,7 @@ export function formatParamValue(val?: string | null): string | null {
     const num = Number(suffixMatch[1]);
     const unit = suffixMatch[2].toUpperCase();
     if (!Number.isFinite(num) || num <= 0) return s;
-    return Number.isInteger(num) ? `${num}${unit}` : `${num}${unit}`;
+    return `${num}${unit}`;
   }
 
   const cleaned = normalizeExactParamDigits(s);
@@ -238,6 +238,18 @@ export async function copyTextToClipboard(value: string): Promise<boolean> {
   }
 }
 
+export function downloadFile(content: string, filename: string, mimeType = 'application/json'): void {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export async function fetchLeaderboardApi(): Promise<LeaderboardEntry[]> {
   const res = await fetch(`${API_BASE}/api/leaderboard`);
   if (!res.ok) {
@@ -247,39 +259,27 @@ export async function fetchLeaderboardApi(): Promise<LeaderboardEntry[]> {
   return Array.isArray(data) ? data : [];
 }
 
-export async function validateSubmissionApi(formData: FormData): Promise<ValidateResponse> {
-  const res = await fetch(`${API_BASE}/api/validate`, {
+async function postFormData<T>(path: string, formData: FormData, label: string): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     body: formData,
   });
 
   if (!res.ok) {
-    let errDetail = `Validation error (${res.status})`;
+    let errDetail = `${label} (${res.status})`;
     try {
       const errJson = await res.json();
-      if (errJson && errJson.detail) errDetail = errJson.detail;
+      if (errJson?.detail) errDetail = errJson.detail;
     } catch {}
     throw new Error(errDetail);
   }
 
-  return (await res.json()) as ValidateResponse;
+  return (await res.json()) as T;
 }
 
-export async function computeResultApi(formData: FormData): Promise<SubmitResponse> {
-  const res = await fetch(`${API_BASE}/api/result`, {
-    method: 'POST',
-    body: formData,
-  });
+export const validateSubmissionApi = (formData: FormData): Promise<ValidateResponse> =>
+  postFormData<ValidateResponse>('/api/validate', formData, 'Validation error');
 
-  if (!res.ok) {
-    let errDetail = `Evaluation error (${res.status})`;
-    try {
-      const errJson = await res.json();
-      if (errJson && errJson.detail) errDetail = errJson.detail;
-    } catch {}
-    throw new Error(errDetail);
-  }
-
-  return (await res.json()) as SubmitResponse;
-}
+export const computeResultApi = (formData: FormData): Promise<SubmitResponse> =>
+  postFormData<SubmitResponse>('/api/result', formData, 'Evaluation error');
 
