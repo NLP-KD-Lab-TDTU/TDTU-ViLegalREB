@@ -11,9 +11,6 @@ export const LeaderboardPage: React.FC = () => {
       <div className="page-header-simple">
         <div className="page-title-group">
           <h1 className="page-title">Leaderboard Rankings ({entries.length} models)</h1>
-          <p className="page-subtitle">
-            Comprehensive evaluation results across Vietnamese legal retrieval benchmarks.
-          </p>
         </div>
       </div>
 
