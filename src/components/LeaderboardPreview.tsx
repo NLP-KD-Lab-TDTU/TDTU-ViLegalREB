@@ -19,23 +19,19 @@ export const LeaderboardPreview: React.FC<LeaderboardPreviewProps> = ({
   error,
   onRetry,
 }) => {
-  // Always display all tracks and Core relevance (Grade >= 2), top 5 models sorted by primary metric (ndcg_10 desc)
-  const top5Entries = useMemo(() => {
+  // Always display all tracks and Core relevance (Grade >= 2), top 10 models sorted by primary metric (ndcg_10 desc)
+  const topEntries = useMemo(() => {
     const list = [...entries];
-    list.sort((a, b) => {
-      const scoreA = a.ndcg_10 ?? -1;
-      const scoreB = b.ndcg_10 ?? -1;
-      return scoreB - scoreA;
-    });
+    list.sort((a, b) => (b.ndcg_10 ?? -1) - (a.ndcg_10 ?? -1));
     return list.slice(0, 10);
   }, [entries]);
 
-  // Best scores across top 5 preview entries
+  // Best scores across top 10 preview entries
   const bestScores = useMemo(() => {
-    if (top5Entries.length === 0) return {};
+    if (topEntries.length === 0) return {};
     const findMax = (getter: (e: LeaderboardEntry) => number | null | undefined): number => {
       let max = -Infinity;
-      for (const e of top5Entries) {
+      for (const e of topEntries) {
         const val = getter(e);
         if (val !== null && val !== undefined && !isNaN(val) && val > max) {
           max = val;
@@ -50,7 +46,7 @@ export const LeaderboardPreview: React.FC<LeaderboardPreviewProps> = ({
       recall_100: findMax((e) => e.recall_100),
       map_100: findMax((e) => e.map_100),
     };
-  }, [top5Entries]);
+  }, [topEntries]);
 
   const isBest = (val: number | null | undefined, max: number | undefined): boolean => {
     if (val === null || val === undefined || isNaN(val) || max === undefined || max === -Infinity) {
@@ -91,16 +87,16 @@ export const LeaderboardPreview: React.FC<LeaderboardPreviewProps> = ({
               <th className="th-num primary" title="Normalized Discounted Cumulative Gain @ 10 (Primary metric)">
                 nDCG@10
               </th>
-              <th className="th-num" title="Normalized Discounted Cumulative Gain @ 5">
+              <th className="th-num preview-col-extra" title="Normalized Discounted Cumulative Gain @ 5">
                 nDCG@5
               </th>
-              <th className="th-num" title="Mean Reciprocal Rank @ 10 (Core Relevance)">
+              <th className="th-num preview-col-extra" title="Mean Reciprocal Rank @ 10 (Core Relevance)">
                 MRR@10
               </th>
               <th className="th-num" title="Recall @ 100 (Core Relevance)">
-                Recall@100
+                R@100
               </th>
-              <th className="th-num" title="Mean Average Precision @ 100 (Core Relevance)">
+              <th className="th-num preview-col-extra" title="Mean Average Precision @ 100 (Core Relevance)">
                 MAP@100
               </th>
             </tr>
@@ -121,14 +117,14 @@ export const LeaderboardPreview: React.FC<LeaderboardPreviewProps> = ({
                   </button>
                 </td>
               </tr>
-            ) : top5Entries.length === 0 ? (
+            ) : topEntries.length === 0 ? (
               <tr>
                 <td className="table-state-cell" colSpan={11}>
                   No models evaluated yet.
                 </td>
               </tr>
             ) : (
-              top5Entries.map((item, index) => {
+              topEntries.map((item, index) => {
                 const url = safeUrl(item.paper_url);
                 const is2Stage = item.eval_mode === '2-stage';
                 const rankNum = index + 1;
@@ -166,6 +162,7 @@ export const LeaderboardPreview: React.FC<LeaderboardPreviewProps> = ({
                           </span>
                         )}
                       </div>
+                      <div className="mobile-model-sub">{item.team_name}</div>
                     </td>
 
                     <td className="td-team" title={item.team_name}>
@@ -188,16 +185,16 @@ export const LeaderboardPreview: React.FC<LeaderboardPreviewProps> = ({
                     <td className={`td-num primary ${isBest(item.ndcg_10, bestScores.ndcg_10) ? 'cell-best-metric' : ''}`}>
                       {fmt(item.ndcg_10)}
                     </td>
-                    <td className={`td-num ${isBest(item.ndcg_5, bestScores.ndcg_5) ? 'cell-best-metric' : ''}`}>
+                    <td className={`td-num preview-col-extra ${isBest(item.ndcg_5, bestScores.ndcg_5) ? 'cell-best-metric' : ''}`}>
                       {fmt(item.ndcg_5)}
                     </td>
-                    <td className={`td-num ${isBest(item.mrr_10, bestScores.mrr_10) ? 'cell-best-metric' : ''}`}>
+                    <td className={`td-num preview-col-extra ${isBest(item.mrr_10, bestScores.mrr_10) ? 'cell-best-metric' : ''}`}>
                       {fmt(item.mrr_10)}
                     </td>
                     <td className={`td-num ${isBest(item.recall_100, bestScores.recall_100) ? 'cell-best-metric' : ''}`}>
                       {fmt(item.recall_100)}
                     </td>
-                    <td className={`td-num ${isBest(item.map_100, bestScores.map_100) ? 'cell-best-metric' : ''}`}>
+                    <td className={`td-num preview-col-extra ${isBest(item.map_100, bestScores.map_100) ? 'cell-best-metric' : ''}`}>
                       {fmt(item.map_100)}
                     </td>
                   </tr>
