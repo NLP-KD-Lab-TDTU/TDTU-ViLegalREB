@@ -1,38 +1,67 @@
----
-title: TDTU-ViLegalREB Leaderboard
-colorFrom: blue
-colorTo: indigo
-sdk: static
-pinned: false
----
+# TDTU-ViLegalREB Leaderboard
 
-# TDTU-ViLegalREB Leaderboard Frontend
+Leaderboard for the Vietnamese Legal Retrieval Embedding Benchmark (143 queries, 3.03M corpus chunks, 27 legal categories, graded relevance 0/1/2).
 
-Frontend application built with **React 19**, **TypeScript**, **Vite**, and **Lucide React**.
+- Website: https://nlp-kd-lab-tdtu.github.io/TDTU-ViLegalREB/
+- Dataset & Scripts: https://huggingface.co/datasets/NLP-KD-Lab-TDTU/TDTU-ViLegalREB
 
-## Features
+## Website Guide
 
-- **Full Benchmark Metrics**: Displays 10 IR evaluation metrics (nDCG@10, nDCG@5, MRR@10, Recall@10, Recall@100, MAP@10, MAP@100, Recall@5, Recall@50, HNR@10).
-- **Core vs. All Relevance Toggle**: Switch dynamically between Core relevance ($\tau \ge 2$) and All relevance ($\tau \ge 1$).
-- **Strict User-Provided Model Name**: Retains the exact model name entered by the user without automated heuristic modification.
-- **Fixed 10s Submission Delay Modal**: Displays an interactive modal with a spinning `Loader2` indicator during the 10-second processing window.
-- **Completion Flow**:
-  - Switches to a green `CheckCircle2` checkmark on success with summary metric chips (nDCG@10, Recall@100, MAP@100).
-  - 5-second automatic countdown with auto-dismiss.
-  - Manual exit button ("Thoát ngay") and close button.
+- **Overview (`/`)**: Benchmark summary, Top-10 models, and query distribution across 27 legal categories.
+- **Construction (`/construction`)**: 7-stage dataset construction pipeline.
+- **Leaderboard (`/leaderboard`)**: Full rankings with Core (`grade >= 2`) / All (`grade >= 1`) toggle, track filter (Full Corpus / 2-Stage), sorting, search, and per-model category breakdown.
+- **Submit (`/submission`)**: Submission instructions, sample TSV download, upload form, and evaluation metric definitions.
 
-## Development
+## 1. Download Data & Scripts
+
+Download the Hugging Face dataset repository to get queries, corpora, and scripts:
 
 ```bash
-# Install dependencies
-npm install
-
-# Start Vite dev server (runs at http://localhost:3000, proxies /api to port 8000)
-npm run dev
-
-# Typecheck and build for production
-npm run build
-
-# Preview production build
-npm run preview
+pip install -U huggingface_hub
+hf download NLP-KD-Lab-TDTU/TDTU-ViLegalREB --repo-type dataset --local-dir TDTU-ViLegalREB
+cd TDTU-ViLegalREB
+pip install -r requirements.txt
 ```
+
+Files included:
+- `run.py`: Retrieval runner
+- `submission.py`: TSV validator
+- `data/corpus.json`: Full corpus (3.03M chunks, ~5.5 GB)
+- `data/corpus_candidates.json`: 2-Stage candidate pool (347K chunks, ~1.1 GB)
+- `data/queries.json`: 143 test queries
+
+## 2. Run Retrieval & Validate TSV
+
+Generate `results/{run_name}_run.tsv`:
+
+```bash
+# BM25 (Full Corpus)
+python run.py --model bm25 --top-k 100
+
+# Dense Retrieval (Full Corpus)
+python run.py --model dense --encoder-name sentence-transformers/all-MiniLM-L6-v2 --device cuda --top-k 100
+
+# 2-Stage Retrieval (Candidate Pool)
+python run.py --model dense --encoder-name sentence-transformers/all-MiniLM-L6-v2 --corpus-file corpus_candidates.json --device cuda --top-k 100
+```
+
+Validate output format before submitting:
+
+```bash
+python submission.py results/my_model_run.tsv
+```
+
+TSV format: 6 tab-separated columns without header (`query_id \t Q0 \t chunk_id \t rank \t score \t run_name`), consecutive ranks `1..K`, no duplicate `chunk_id` per query, descending finite scores, covering all 143 queries.
+
+## 3. Submit Results
+
+1. Go to https://nlp-kd-lab-tdtu.github.io/TDTU-ViLegalREB/submission
+2. Fill in **Model Name**, **Team / Organization**, optional **Model Parameters** and **Paper or Code URL**.
+3. Enter a **Secret Token** (>= 8 chars) or click **Generate**, then save it to update runs or submit new models under your team later.
+4. Upload the validated `.tsv` file and select **Full Corpus Retrieval** or **2-Stage Re-ranking**.
+5. Click **Submit Run to Leaderboard**. The server validates the file, computes metrics (`{model}_metrics.json` downloadable), and queues the entry for admin review.
+
+## Contact
+
+- Email: leanhcuong@tdtu.edu.vn
+- GitHub: https://github.com/NLP-KD-Lab-TDTU/TDTU-ViLegalREB
