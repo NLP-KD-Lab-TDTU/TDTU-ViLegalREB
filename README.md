@@ -17,6 +17,14 @@ Leaderboard for the Vietnamese Legal Retrieval Embedding Benchmark (143 queries,
 
 Follow instruction in this reposity https://github.com/NLP-KD-Lab-TDTU/TDTU-ViLegalREB-eval-code
 
+## Paper
+
+> TBA
+
+## Citation
+
+> TBA
+
 ## Contact
 
 - Anh-Cuong Le (paper): leanhcuong@tdtu.edu.vn
