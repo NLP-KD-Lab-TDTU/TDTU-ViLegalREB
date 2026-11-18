@@ -104,7 +104,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <a
-                  href="mailto:nlpkd-lab@tdtu.edu.vn"
+                  href="mailto:leanhcuong@tdtu.edu.vn"
                   className="external-link"
                 >
                   <span>Contact</span>
